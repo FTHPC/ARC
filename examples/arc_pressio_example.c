@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Utilize ARC library
-    arc_init_w_timing(1);
+    arc_init(1);
 
     // Get a pointer to uint8_t data from libPressio
     size_t compressed_size;
@@ -98,8 +98,10 @@ int main(int argc, char* argv[]) {
     double time_constraint = atof(argv[2]);
     uint8_t * arc_encoded_data;
     uint32_t arc_encoded_data_size;
+    int num_choices = 1;
+    int ecc_choices[] = {ARC_ANY_ECC};
     gettimeofday(&start, NULL);
-    ret = arc_encode(data, (uint32_t)compressed_size, memory_constraint, time_constraint, &arc_encoded_data, &arc_encoded_data_size);
+    ret = arc_encode(data, (uint32_t)compressed_size, memory_constraint, time_constraint, ecc_choices, num_choices,  &arc_encoded_data, &arc_encoded_data_size);
     gettimeofday(&stop, NULL);
     encode_time_taken = (double)(stop.tv_usec - start.tv_usec) / 1000000 + (double)(stop.tv_sec - start.tv_sec);
     if (ret == 0){
