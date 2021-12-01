@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <stdlib.h> 
 #include <string.h>
@@ -54,3 +58,7 @@ int arc_secded_encode(uint8_t* data, uint32_t data_size, uint32_t block_size, ui
 int arc_secded_decode(uint8_t* encoded_data, uint32_t encoded_data_size, uint8_t** data, uint32_t* data_size);
 int arc_reed_solomon_encode(uint8_t* data, uint32_t data_size, uint32_t data_devices, uint32_t code_devices, uint32_t threads, uint8_t** encoded_data, uint32_t* encoded_data_size);
 int arc_reed_solomon_decode(uint8_t* encoded_data, uint32_t encoded_data_size, uint8_t** data, uint32_t *data_size);
+
+#ifdef __cplusplus
+}
+#endif
