@@ -1,3 +1,6 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
 /* jerasure.h - header of kernel procedures
  * James S. Plank
 
@@ -297,4 +300,7 @@ int *jerasure_matrix_multiply(int *m1, int *m2, int r1, int c1, int r2, int c2, 
 
 void jerasure_get_stats(double *fill_in);
 
+#endif
+#ifdef __cplusplus
+}
 #endif

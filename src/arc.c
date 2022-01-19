@@ -1,4 +1,6 @@
 // Libraries
+#include <sys/stat.h>
+#include <errno.h>
 #include "arc.h"
 #include "jerasure.h"
 #include "reed_sol.h"
@@ -49,18 +51,57 @@ int RS_ID = 4;
 // Resource Variables Section
 // ###########################
 // Resource Folder Location
-char *resource_location = "/home/dakotaf/ARC/src/res/";
-// Cache Resource Folder Location
-char *cache_resource_location = "/home/dakotaf/ARC/src/res/cache/";
+
+// path to cache directories
+char *cache_resource_location = NULL;
 // Set configuration information cache string
 char *thread_resource_file = "_information_cache.csv";
 // Hamming & SECDED Resource Variables 
-uint8_t H_S_1_Parity_Matrix[4];
-uint64_t H_S_8_Parity_Matrix[7];
-uint8_t H_1_Syndrome_Table[16];
-uint8_t H_8_Syndrome_Table[72];
-uint8_t S_1_Syndrome_Table[16];
-uint8_t S_8_Syndrome_Table[72];
+const uint8_t H_S_1_Parity_Matrix[4] = {
+  0x5B,
+  0x6D,
+  0x8E,
+  0xF0
+};
+const uint64_t H_S_8_Parity_Matrix[7] = {
+  0xAB55555556AAAD5B,
+  0xCD9999999B33366D,
+  0xF1E1E1E1E3C3C78E,
+  0x01FE01FE03FC07F0,
+  0x01FFFE0003FFF800,
+  0x01FFFFFFFC000000,
+  0xFE00000000000000
+};
+const uint8_t H_1_Syndrome_Table[16] = {
+  0x03, 0x05, 0x06, 0x07, 0x09, 0x0A, 0x0B, 0x0C,
+  0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
+};
+const uint8_t H_8_Syndrome_Table[72] = {
+  0x03, 0x05, 0x06, 0x07, 0x09, 0x0A, 0x0B, 0x0C,
+  0x0D, 0x0E, 0x0F, 0x11, 0x12, 0x13, 0x14, 0x15,
+  0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D,
+  0x1E, 0x1F, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26,
+  0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E,
+  0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36,
+  0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E,
+  0x3F, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
+  0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
+};
+const uint8_t S_1_Syndrome_Table[16] = {
+  0x13, 0x15, 0x16, 0x07, 0x19, 0x1A, 0x0B, 0x1C,
+  0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
+};
+const uint8_t S_8_Syndrome_Table[72] = {
+  0x83, 0x85, 0x86, 0x07, 0x89, 0x8A, 0x0B, 0x8C,
+  0x0D, 0x0E, 0x8F, 0x91, 0x92, 0x13, 0x94, 0x15,
+  0x16, 0x97, 0x98, 0x19, 0x1A, 0x9B, 0x1C, 0x9D,
+  0x9E, 0x1F, 0xA1, 0xA2, 0x23, 0xA4, 0x25, 0x26,
+  0xA7, 0xA8, 0x29, 0x2A, 0xAB, 0x2C, 0xAD, 0xAE,
+  0x2F, 0xB0, 0x31, 0x32, 0xB3, 0x34, 0xB5, 0xB6,
+  0x37, 0x38, 0xB9, 0xBA, 0x3B, 0xBC, 0x3D, 0x3E,
+  0xBF, 0xC1, 0xC2, 0x43, 0xC4, 0x45, 0x46, 0xC7,
+  0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
+};
 
 // ARC Decision Variables Section
 // ###############################
@@ -138,103 +179,6 @@ void arc_help(){
 // return:
 // x        -   Success=1, Failure=0
 int arc_resource_init(){
-    FILE *fp;
-    int i;
-    char * resource_file = "Hamming_SECDED_1_Parity_Matrix";
-    // Setup H_S_1_Parity_Matrix with resources file
-    char * file_location = concat(resource_location, resource_file);
-    fp = fopen(file_location, "r");
-    if(fp == NULL){
-        printf("Error opening res/Hamming_SECDED_1_Parity_Matrix\n");
-        return 0;
-    }
-    uint8_t Parity_1;
-    for (i = 0; i < 4; i++){
-        fscanf(fp, "%hhX", &Parity_1);
-        H_S_1_Parity_Matrix[i] = Parity_1;
-    }
-    fclose(fp);
-    free(file_location);
-
-    // Setup H_1_Syndrome_Table with resources file
-    resource_file = "Hamming_1_Syndrome_Table";
-    file_location = concat(resource_location, resource_file);
-    fp = fopen(file_location, "r");
-    if(fp == NULL){
-        printf("Error opening res/Hamming_1_Syndrome_Table\n");
-        return 0;
-    }
-    uint8_t Snydrome_1;
-    for (i = 0; i < 16; i++){
-        fscanf(fp, "%hhX", &Snydrome_1);
-        H_1_Syndrome_Table[i] = Snydrome_1;
-    }
-    fclose(fp);
-    free(file_location);
-
-    // Setup S_1_Syndrome_Table with resources file
-    resource_file = "SECDED_1_Syndrome_Table";
-    file_location = concat(resource_location, resource_file);
-    fp = fopen(file_location, "r");
-    if(fp == NULL){
-        printf("Error opening res/SECDED_1_Syndrome_Table\n");
-        return 0;
-    }
-    for (i = 0; i < 16; i++){
-        fscanf(fp, "%hhX", &Snydrome_1);
-        S_1_Syndrome_Table[i] = Snydrome_1;
-    }
-    fclose(fp);
-    free(file_location);
-
-    // Setup H_S_8_Parity_Matrix with resources file
-    resource_file = "Hamming_SECDED_8_Parity_Matrix";
-    file_location = concat(resource_location, resource_file);
-    fp = fopen(file_location, "r");
-    if(fp == NULL){
-        printf("Error opening res/Hamming_SECDED_8_Parity_Matrix\n");
-        return 0;
-    }
-    uint64_t Parity_8;
-    for (i = 0; i < 7; i++){
-        fscanf(fp, "%"PRIx64, &Parity_8);
-        H_S_8_Parity_Matrix[i] = Parity_8;
-    }
-    fclose(fp);
-    free(file_location);
-
-    // Setup H_8_Syndrome_Table with resources file
-    resource_file = "Hamming_8_Syndrome_Table";
-    file_location = concat(resource_location, resource_file);
-    fp = fopen(file_location, "r");
-    if(fp == NULL){
-        printf("Error opening res/Hamming_8_Syndrome_Table\n");
-        return 0;
-    }
-    uint8_t Snydrome_8;
-    for (i = 0; i < 72; i++){
-        fscanf(fp, "%hhX", &Snydrome_8);
-        H_8_Syndrome_Table[i] = Snydrome_8;
-    }
-    fclose(fp);
-    free(file_location);
-
-    // Setup S_8_Syndrome_Table with resources file
-    resource_file = "SECDED_8_Syndrome_Table";
-    file_location = concat(resource_location, resource_file);
-    fp = fopen(file_location, "r");
-    if(fp == NULL){
-        printf("Error opening res/SECDED_8_Syndrome_Table\n");
-        return 0;
-    }
-    for (i = 0; i < 72; i++){
-        fscanf(fp, "%hhX", &Snydrome_8);
-        S_8_Syndrome_Table[i] = Snydrome_8;
-    }
-    fclose(fp);
-    free(file_location);
-
-    // Set INIT to True
     printf("ARC Resource Files Initialized\n");
     INIT = 1;
     return 1;
@@ -252,6 +196,22 @@ int arc_init(uint32_t max_threads){
     int err = arc_resource_init();
     if(err == 0){
         return 0;
+    }
+    const char* base;
+    const char* xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
+    if( xdg_runtime_dir == NULL) {
+      const char* tmp_dir = getenv("TMPDIR");
+      if(tmp_dir == NULL) {
+        base = tmp_dir;
+      } else {
+        base = "/tmp";
+      }
+    } else {
+      base = xdg_runtime_dir;
+    }
+    cache_resource_location = concat(base, "/arc");
+    if(mkdir(cache_resource_location, S_IRWXU | S_IRWXG) && errno != EEXIST) {
+      return 0;
     }
 
     // Turn off print outs
@@ -2812,7 +2772,7 @@ int arc_reed_solomon_encode(uint8_t* data, uint32_t data_size, uint32_t data_dev
         int remainder_block;
         int longs_processed = 0;
         int current_blocks_longs;
-        long temp_l;
+        uint64_t temp_l;
         uint32_t current_block_data_devices;
 
         // Set current block size (data devices for this block)
@@ -2842,14 +2802,14 @@ int arc_reed_solomon_encode(uint8_t* data, uint32_t data_size, uint32_t data_dev
                (longs_processed == current_blocks_longs-1 && blocks_processed == block_count-1 && remainder_long_in_data == 0)){
                 temp_l = 0;
                 for (j = 0; j < 8; j++){
-                    temp_l = temp_l | ((long)data[current_block_data_index] << (64-(8*(j+1)))); 
+                    temp_l = temp_l | ((uint64_t)data[current_block_data_index] << (64-(8*(j+1)))); 
                     current_block_data_index++;
                 }
                 longs_processed++;
             } else {
                 temp_l = 0;
                 for (j = 0; j < remainder_long_in_data; j++){
-                    temp_l = temp_l | ((long)data[current_block_data_index] << (64-(8*(j+1))));
+                    temp_l = temp_l | ((uint64_t)data[current_block_data_index] << (64-(8*(j+1))));
                     current_block_data_index++;
                 }
                 longs_processed++;
@@ -3275,5 +3235,3 @@ int arc_reed_solomon_decode(uint8_t* encoded_data, uint32_t encoded_data_size, u
     // Return resulting array and decode success value
     return decode_success;
 }
-
-

@@ -1,3 +1,6 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
 /* Galois.h
  * James S. Plank
 
@@ -108,4 +111,7 @@ void galois_w32_region_multiply(char *region,       /* Region to multiply */
                                                        Otherwise region is overwritten */
                                   int add);         /* If (r2 != NULL && add) the produce is XOR'd with r2 */
 
+#endif
+#ifdef __cplusplus
+}
 #endif
